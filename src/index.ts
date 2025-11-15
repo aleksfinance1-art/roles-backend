@@ -6,7 +6,39 @@ import { logger } from './config/logger';
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(cors());
+// CORS конфигурация - разрешаем запросы с poehali.dev и localhost
+const corsOptions = {
+  origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+    const allowedOrigins = process.env.CORS_ORIGIN?.split(',') || [
+      'https://poehali.dev',
+      'http://localhost:3000',
+      'http://localhost:5173',
+      'http://localhost:8080',
+    ];
+    
+    // Разрешаем запросы без origin (например, Postman, curl)
+    if (!origin) {
+      return callback(null, true);
+    }
+    
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      // В development разрешаем все, в production только разрешенные
+      if (process.env.NODE_ENV === 'development') {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    }
+  },
+  credentials: true,
+  optionsSuccessStatus: 200,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 
 app.use((req, res, next) => {
